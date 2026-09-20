@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Birthday Card</title>
+  
+  <!-- Библиотека для конфетти -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050005;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      position: relative;
+    }
+
+    /* Динамический фон */
+    .ambient-background {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      background: radial-gradient(circle at 50% 50%, #200318 0%, #08000a 65%, #030004 100%);
+      pointer-events: none;
+    }
+
+    .vignette {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 2;
+      background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.8) 100%);
+      pointer-events: none;
+    }
+
+    .heart-bg-frame {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      opacity: 0;
+      transition: opacity 2s ease;
+      background: radial-gradient(circle at center, rgba(140, 10, 50, 0.4) 0%, rgba(5, 0, 8, 0.95) 85%);
+      pointer-events: none;
+    }
+
+    .heart-bg-frame.active {
+      opacity: 1;
+    }
+
+    /* Canvas для звезд и сердца */
+    #universe-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Карточка с текстом */
+    .card-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(20, 8, 24, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 77, 109, 0.4);
+      border-radius: 24px;
+      padding: 30px 24px;
+      width: 90%;
+      max-width: 480px;
+      text-align: center;
+      box-shadow: 0 0 50px rgba(255, 0, 85, 0.3), 0 20px 40px rgba(0, 0, 0, 0.8);
+      z-index: 10;
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .text-box {
+      font-size: 1.05rem;
+      line-height: 1.6;
+      min-height: 110px;
+      text-align: center;
+      margin-bottom: 20px;
+      word-wrap: break-word;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background-color: #ff4d6d;
+      margin-left: 3px;
+      vertical-align: sub;
+      animation: blink 0.6s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #ff4d6d, #d90429);
+      color: #fff;
+      border: none;
+      padding: 14px 32px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(255, 77, 109, 0.6);
+      transition: all 0.3s ease;
+      outline: none;
+      display: inline-block;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Финальный экран */
+    .floating-world {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 5;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+      pointer-events: auto;
+    }
+
+    .floating-world.active {
+      opacity: 1;
+    }
+
+    .header-title {
+      position: absolute;
+      top: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #ff4d6d;
+      text-shadow: 0 0 15px #ff4d6d, 0 0 30px #ff0055;
+      animation: pulse 2s infinite alternate;
+      z-index: 6;
+      white-space: nowrap;
+      text-align: center;
+      width: 100%;
+    }
+
+    @keyframes pulse {
+      from { transform: translateX(-50%) scale(1); }
+      to { transform: translateX(-50%) scale(1.05); }
+    }
+
+    /* УВЕЛИЧЕННЫЕ КАРТОЧКИ ФОТО НА СЦЕНЕ */
+    .photo-card {
+      position: absolute;
+      width: 240px;
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 18px;
+      padding: 10px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 77, 109, 0.3);
+      cursor: pointer;
+      pointer-events: auto;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 7;
+      -webkit-tap-highlight-color: transparent;
+
+      /* Анимация плавного движения по кругу/овалу */
+      animation: floatAround 6s ease-in-out infinite;
+    }
+
+    .photo-top-left {
+      top: 10%;
+      left: 4%;
+      animation-delay: 0s;
+    }
+
+    .photo-bottom-left {
+      bottom: 12%;
+      left: 4%;
+      animation-delay: -1.5s;
+    }
+
+    .photo-top-right {
+      top: 10%;
+      right: 4%;
+      animation-delay: -3s;
+    }
+
+    .photo-bottom-right {
+      bottom: 12%;
+      right: 4%;
+      animation-delay: -4.5s;
+    }
+
+    @keyframes floatAround {
+      0% {
+        transform: translate(0px, 0px) rotate(0deg);
+      }
+      25% {
+        transform: translate(12px, -10px) rotate(2deg);
+      }
+      50% {
+        transform: translate(0px, -18px) rotate(-1deg);
+      }
+      75% {
+        transform: translate(-12px, -8px) rotate(-3deg);
+      }
+      100% {
+        transform: translate(0px, 0px) rotate(0deg);
+      }
+    }
+
+    .photo-card:active, .photo-card:hover {
+      animation-play-state: paused;
+      border-color: #ff4d6d;
+      box-shadow: 0 12px 35px rgba(255, 77, 109, 0.85);
+      z-index: 10;
+    }
+
+    .photo-card img {
+      width: 100%;
+      height: 170px;
+      object-fit: cover;
+      border-radius: 12px;
+      display: block;
+    }
+
+    .photo-card .caption {
+      font-size: 0.95rem;
+      text-align: center;
+      margin-top: 8px;
+      color: #fff;
+      font-weight: 500;
+      text-shadow: 0 0 5px rgba(0,0,0,0.9);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    /* КНОПКА СНИЗУ ПО ЦЕНТРУ */
+    .view-all-container {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 8;
+    }
+
+    .btn-view-all {
+      background: rgba(255, 77, 109, 0.25);
+      border: 1px solid rgba(255, 77, 109, 0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: #fff;
+      padding: 14px 32px;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(255, 77, 109, 0.4);
+      transition: all 0.3s ease;
+    }
+
+    .btn-view-all:hover {
+      background: rgba(255, 77, 109, 0.5);
+      box-shadow: 0 0 30px rgba(255, 77, 109, 0.8);
+      transform: scale(1.05);
+    }
+
+    /* Модальное окно просмотра медиа (z-index: 200 — всегда ПОВЕРХ ВСЕХ ОКОН) */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 200;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-content {
+      max-width: 90%;
+      max-height: 80vh;
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(255, 77, 109, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      object-fit: contain;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 25px;
+      color: #fff;
+      font-size: 2.5rem;
+      cursor: pointer;
+      font-weight: bold;
+      z-index: 210;
+    }
+
+    /* Модальное окно «Галерея» (z-index: 100) */
+    .gallery-modal-bg {
+      z-index: 100 !important;
+    }
+
+    .gallery-container {
+      width: 90%;
+      max-width: 1100px;
+      max-height: 80vh;
+      background: rgba(15, 5, 20, 0.92);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 77, 109, 0.35);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    /* Вкладки вверху галереи (Фото / Видео) */
+    .gallery-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 77, 109, 0.2);
+      padding-bottom: 12px;
+    }
+
+    .tab-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ccc;
+      padding: 10px 24px;
+      border-radius: 20px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+      border-color: rgba(255, 77, 109, 0.6);
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg, #ff4d6d, #d90429);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 0 15px rgba(255, 77, 109, 0.6);
+    }
+
+    /* Сетка фото и видео */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 18px;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+
+    .gallery-grid img, .video-card {
+      width: 100%;
+      height: 170px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .gallery-grid img:hover, .video-card:hover {
+      transform: scale(1.05);
+      border-color: #ff4d6d;
+      box-shadow: 0 5px 20px rgba(255, 77, 109, 0.6);
+    }
+
+    /* Карточка видео с иконкой Play */
+    .video-card {
+      position: relative;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .video-card video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.7;
+    }
+
+    .play-icon {
+      position: absolute;
+      width: 45px;
+      height: 45px;
+      background: rgba(255, 77, 109, 0.85);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+    }
+
+    .play-icon::after {
+      content: '';
+      display: block;
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 8px 0 8px 14px;
+      border-color: transparent transparent transparent #ffffff;
+      margin-left: 3px;
+    }
+
+    /* Мобильная адаптация */
+    @media (max-width: 600px) {
+      .header-title { font-size: 1.3rem; top: 15px; }
+      
+      .photo-card { 
+        width: 125px;
+        padding: 6px; 
+        border-radius: 12px;
+      }
+
+      .photo-card img { 
+        height: 85px; 
+        border-radius: 8px;
+      }
+
+      .photo-card .caption { 
+        font-size: 0.65rem; 
+      }
+
+      .photo-top-left { top: 9%; left: 2%; }
+      .photo-bottom-left { bottom: 11%; left: 2%; }
+      .photo-top-right { top: 9%; right: 2%; }
+      .photo-bottom-right { bottom: 11%; right: 2%; }
+
+      .btn-view-all { font-size: 0.85rem; padding: 10px 22px; }
+
+      .gallery-container {
+        padding: 14px;
+      }
+
+      .tab-btn {
+        padding: 8px 18px;
+        font-size: 0.88rem;
+      }
+
+      .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        gap: 12px;
+      }
+
+      .gallery-grid img, .video-card {
+        height: 135px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-background"></div>
+  <div class="vignette"></div>
+  <div id="heart-frame" class="heart-bg-frame"></div>
+
+  <canvas id="universe-canvas"></canvas>
+
+  <div class="card-container" id="card-box">
+    <div id="interactive-content">
+      <div class="text-box">
+        <span id="typed-text"></span><span class="cursor" id="cursor"></span>
+      </div>
+      <button id="action-btn" class="btn hidden">Продолжить</button>
+    </div>
+  </div>
+
+  <div id="floating-world" class="floating-world">
+    <div class="header-title">С Днём Рождения! ❤️</div>
+    
+    <!-- 4 КРУПНЫЕ ФОТОГРАФИИ ПО УГЛАМ (ПЛАВАЮТ ПО КРУГУ) -->
+    <div class="photo-card photo-top-left" onclick="openModal('images/photo1.jpg')">
+      <img src="images/photo1.jpg" onerror="this.src='https://via.placeholder.com/300/ff4d6d/ffffff?text=Фото+1'">
+      <div class="caption">Моя любимая ✨</div>
+    </div>
+
+    <div class="photo-card photo-bottom-left" onclick="openModal('images/photo2.jpg')">
+      <img src="images/photo2.jpg" onerror="this.src='https://via.placeholder.com/300/ff758f/ffffff?text=Фото+2'">
+      <div class="caption">Твои воспоминания... 💖</div>
+    </div>
+
+    <div class="photo-card photo-top-right" onclick="openModal('images/photo3.jpg')">
+      <img src="images/photo3.jpg" onerror="this.src='https://via.placeholder.com/300/ff8fa3/ffffff?text=Фото+3'">
+      <div class="caption">Самая лучшая 🌸</div>
+    </div>
+
+    <div class="photo-card photo-bottom-right" onclick="openModal('images/photo4.jpg')">
+      <img src="images/photo4.jpg" onerror="this.src='https://via.placeholder.com/300/ffb3c1/ffffff?text=Фото+4'">
+      <div class="caption">Были времена 💫</div>
+    </div>
+
+    <!-- КНОПКА СНИЗУ -->
+    <div class="view-all-container">
+      <button class="btn-view-all" onclick="openGallery()">Просмотреть все воспоминания</button>
+    </div>
+  </div>
+
+  <!-- Окно просмотра одного фото (z-index 200) -->
+  <div id="image-modal" class="modal" onclick="closeModal('image-modal')">
+    <span class="modal-close">&times;</span>
+    <img id="modal-img" class="modal-content" src="" alt="Фото">
+  </div>
+
+  <!-- Окно просмотра одного видео (z-index 200) -->
+  <div id="video-modal" class="modal" onclick="closeVideoModal()">
+    <span class="modal-close">&times;</span>
+    <video id="modal-video" class="modal-content" controls src=""></video>
+  </div>
+
+  <!-- Окно Галереи с вкладками Фото / Видео -->
+  <div id="gallery-modal" class="modal gallery-modal-bg" onclick="closeModal('gallery-modal')">
+    <span class="modal-close">&times;</span>
+    <div class="gallery-container" onclick="event.stopPropagation()">
+      
+      <!-- Переключатель вкладок -->
+      <div class="gallery-tabs">
+        <button id="tab-photos-btn" class="tab-btn active" onclick="switchTab('photos')">📷 Фотографии</button>
+        <button id="tab-videos-btn" class="tab-btn" onclick="switchTab('videos')">🎬 Видео</button>
+      </div>
+
+      <!-- Вкладка Фото -->
+      <div id="photos-tab-content" class="gallery-grid">
+        <img src="images/photo1.jpg" onclick="openModal('images/photo1.jpg')" onerror="this.src='https://via.placeholder.com/300/ff4d6d/ffffff?text=Фото+1'">
+        <img src="images/photo2.jpg" onclick="openModal('images/photo2.jpg')" onerror="this.src='https://via.placeholder.com/300/ff758f/ffffff?text=Фото+2'">
+        <img src="images/photo3.jpg" onclick="openModal('images/photo3.jpg')" onerror="this.src='https://via.placeholder.com/300/ff8fa3/ffffff?text=Фото+3'">
+        <img src="images/photo4.jpg" onclick="openModal('images/photo4.jpg')" onerror="this.src='https://via.placeholder.com/300/ffb3c1/ffffff?text=Фото+4'">
+        <img src="images/photo5.jpg" onclick="openModal('images/photo5.jpg')" onerror="this.src='https://via.placeholder.com/300/c77dff/ffffff?text=Фото+5'">
+        <img src="images/photo6.jpg" onclick="openModal('images/photo6.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+6'">
+        <img src="images/photo7.jpg" onclick="openModal('images/photo7.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+7'">
+        <img src="images/photo8.jpg" onclick="openModal('images/photo8.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+8'">
+        <img src="images/photo9.jpg" onclick="openModal('images/photo9.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+9'">
+        <img src="images/photo10.jpg" onclick="openModal('images/photo10.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+10'">
+        <img src="images/photo11.jpg" onclick="openModal('images/photo11.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+11'">
+        <img src="images/photo12.jpg" onclick="openModal('images/photo12.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+12'">
+        <img src="images/photo13.jpg" onclick="openModal('images/photo13.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+13'">
+        <img src="images/photo14.jpg" onclick="openModal('images/photo14.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+14'">
+        <img src="images/photo15.jpg" onclick="openModal('images/photo15.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+15'">
+        <img src="images/photo16.jpg" onclick="openModal('images/photo16.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+16'">
+        <img src="images/photo17.jpg" onclick="openModal('images/photo17.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+17'">
+        <img src="images/photo18.jpg" onclick="openModal('images/photo18.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+18'">
+        <img src="images/photo19.jpg" onclick="openModal('images/photo19.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+19'">
+        <img src="images/photo20.jpg" onclick="openModal('images/photo20.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+20'">
+        <img src="images/photo21.jpg" onclick="openModal('images/photo21.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+21'">
+        <img src="images/photo22.jpg" onclick="openModal('images/photo22.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+22'">
+        <img src="images/photo23.jpg" onclick="openModal('images/photo23.jpg')" onerror="this.src='https://via.placeholder.com/300/9d4edd/ffffff?text=Фото+23'">
+      </div>
+
+      <!-- Вкладка Видео -->
+      <div id="videos-tab-content" class="gallery-grid hidden">
+        <!-- 
+          ЧТОБЫ ДОБАВЛЯТЬ ВИДЕО:
+          Просто скопируй блок <div class="video-card"> ниже и укажи путь к видео в src="videos/video1.mp4"
+        -->
+        <div class="video-card" onclick="openVideoModal('videos/video1.mp4')">
+          <video src="videos/video1.mp4#t=0.5" preload="metadata"></video>
+          <div class="play-icon"></div>
+        </div>
+
+        <div class="video-card" onclick="openVideoModal('videos/video2.mp4')">
+          <video src="videos/video2.mp4#t=0.5" preload="metadata"></video>
+          <div class="play-icon"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const textStep1 = "Привет, нажми кнопку что бы продолжить дальше";
+    const textStep2 = "Поздравляю тебя с днем рождения!!!";
+    const textStep3 = "Я бы хотел тебе признаться, что я тебя люблю, может быть ты и уже нашла кого-то я без понятия, даже если это будет не взаимно я не обижусь. Но не бойся, в скором времени ты всё поймешь и узнаешь меня. Всё что ты сейчас видишь на своем экране, я на такое не способен, и специально попросил другого человека сделать это. А сейчас я бы хотел тебе показать твои воспоминания...";
+
+    const textElement = document.getElementById('typed-text');
+    const btn = document.getElementById('action-btn');
+    const cursor = document.getElementById('cursor');
+    const cardBox = document.getElementById('card-box');
+    const floatingWorld = document.getElementById('floating-world');
+    const heartFrame = document.getElementById('heart-frame');
+
+    let confettiInterval = null;
+
+    function typeWriter(text, speed, callback) {
+      let i = 0;
+      textElement.innerHTML = "";
+      cursor.classList.remove('hidden');
+      
+      function type() {
+        if (i < text.length) {
+          textElement.innerHTML += text.charAt(i);
+          i++;
+          setTimeout(type, speed);
+        } else {
+          if (callback) callback();
+        }
+      }
+      type();
+    }
+
+    function eraseText(speed, callback) {
+      let text = textElement.innerHTML;
+      
+      function erase() {
+        if (text.length > 0) {
+          text = text.substring(0, text.length - 1);
+          textElement.innerHTML = text;
+          setTimeout(erase, speed);
+        } else {
+          if (callback) callback();
+        }
+      }
+      erase();
+    }
+
+    window.onload = () => {
+      initCanvas();
+      
+      window.addEventListener('resize', () => {
+        resize();
+      });
+
+      typeWriter(textStep1, 35, () => {
+        btn.classList.remove('hidden');
+        btn.onclick = startStep2;
+      });
+    };
+
+    function startStep2() {
+      btn.classList.add('hidden');
+      eraseText(12, () => {
+        startConfetti();
+        typeWriter(textStep2, 40, () => {
+          btn.classList.remove('hidden');
+          btn.onclick = startStep3;
+        });
+      });
+    }
+
+    function startStep3() {
+      btn.classList.add('hidden');
+      eraseText(12, () => {
+        typeWriter(textStep3, 45, () => {
+          btn.classList.remove('hidden');
+          btn.onclick = startStep4;
+        });
+      });
+    }
+
+    function startStep4() {
+      btn.classList.add('hidden');
+      stopConfetti();
+
+      eraseText(8, () => {
+        cursor.classList.add('hidden');
+        
+        startCenterGatheringAndExplode(() => {
+          heartFrame.classList.add('active');
+          floatingWorld.classList.add('active');
+        });
+      });
+    }
+
+    function startConfetti() {
+      confettiInterval = setInterval(() => {
+        confetti({
+          particleCount: 10,
+          angle: 90,
+          spread: 90,
+          origin: { x: Math.random(), y: -0.1 },
+          scalar: 1.3,
+          colors: ['#ff0055', '#ff4d6d', '#ffd700', '#ffffff', '#ff8fa3']
+        });
+      }, 180);
+    }
+
+    function stopConfetti() {
+      if (confettiInterval) clearInterval(confettiInterval);
+    }
+
+    /* Модальные окна Фото и Галереи */
+    function openModal(src) {
+      const modal = document.getElementById('image-modal');
+      const modalImg = document.getElementById('modal-img');
+      modalImg.src = src;
+      modal.classList.add('show');
+    }
+
+    function openGallery() {
+      document.getElementById('gallery-modal').classList.add('show');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('show');
+    }
+
+    /* Логика вкладок (Фото / Видео) */
+    function switchTab(tabName) {
+      const photosTab = document.getElementById('photos-tab-content');
+      const videosTab = document.getElementById('videos-tab-content');
+      const photoBtn = document.getElementById('tab-photos-btn');
+      const videoBtn = document.getElementById('tab-videos-btn');
+
+      if (tabName === 'photos') {
+        photosTab.classList.remove('hidden');
+        videosTab.classList.add('hidden');
+        photoBtn.classList.add('active');
+        videoBtn.classList.remove('active');
+      } else {
+        videosTab.classList.remove('hidden');
+        photosTab.classList.add('hidden');
+        videoBtn.classList.add('active');
+        photoBtn.classList.remove('active');
+      }
+    }
+
+    /* Логика просмотра Видео */
+    function openVideoModal(src) {
+      const modal = document.getElementById('video-modal');
+      const video = document.getElementById('modal-video');
+      video.src = src;
+      modal.classList.add('show');
+      video.play();
+    }
+
+    function closeVideoModal() {
+      const modal = document.getElementById('video-modal');
+      const video = document.getElementById('modal-video');
+      video.pause();
+      video.src = "";
+      modal.classList.remove('show');
+    }
+
+    /* CANVAS И 3D СЕРДЦЕ */
+    const canvas = document.getElementById('universe-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let particles = [];
+    let fallingStars = [];
+    let heartParticles = [];
+    let innerHeartParticles = [];
+    let state = 'background';
+    let angleY = 0;
+
+    let searchCurrentX = 0;
+    let searchCurrentY = 0;
+    
+    /* ДЛИТЕЛЬНОСТЬ ВРАЩЕНИЯ ШАРА (7 секунд) */
+    const SEARCH_DURATION = 7000;
+    let searchStartTime = 0;
+
+    function initCanvas() {
+      resize();
+
+      const particleCount = width < 600 ? 120 : 200;
+      particles = [];
+
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: Math.random() * 2 + 0.8,
+          vx: (Math.random() - 0.5) * 0.4,
+          vy: (Math.random() - 0.5) * 0.4 - 0.2,
+          alpha: Math.random(),
+          alphaSpeed: Math.random() * 0.02 + 0.008,
+          color: ['#ff4d6d', '#ffffff', '#ff8fa3', '#ffd700', '#c77dff'][Math.floor(Math.random() * 5)]
+        });
+      }
+
+      fallingStars = [];
+      const starCount = width < 600 ? 45 : 80;
+      for (let i = 0; i < starCount; i++) {
+        fallingStars.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          length: Math.random() * 12 + 6,
+          speed: Math.random() * 2.5 + 1.2,
+          size: Math.random() * 1.8 + 0.8,
+          color: ['#ffffff', '#ff4d6d', '#ffb3c1', '#ffd700'][Math.floor(Math.random() * 4)],
+          alpha: Math.random() * 0.8 + 0.2
+        });
+      }
+
+      heartParticles = [];
+      for (let angle = 0; angle < Math.PI * 2; angle += 0.04) {
+        const t = angle;
+        const x = 16 * Math.pow(Math.sin(t), 3);
+        const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+        const z = (Math.sin(t * 3) + Math.cos(t * 2)) * 3;
+
+        heartParticles.push({
+          baseX: x, baseY: y, baseZ: z,
+          x: Math.random() * width, y: Math.random() * height,
+          size: Math.random() * 2.2 + 1.2
+        });
+      }
+
+      innerHeartParticles = [];
+      for (let angle = 0; angle < Math.PI * 2; angle += 0.08) {
+        const t = angle;
+        const x = 9 * Math.pow(Math.sin(t), 3);
+        const y = -(7.5 * Math.cos(t) - 3 * Math.cos(2*t) - 1.2 * Math.cos(3*t) - 0.6 * Math.cos(4*t));
+        const z = (Math.sin(t * 2)) * 2;
+
+        innerHeartParticles.push({
+          baseX: x, baseY: y, baseZ: z,
+          x: Math.random() * width, y: Math.random() * height,
+          size: Math.random() * 1.8 + 0.8
+        });
+      }
+
+      animateCanvas();
+    }
+
+    function resize() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      searchCurrentX = width / 2;
+      searchCurrentY = height / 2;
+    }
+
+    function animateCanvas() {
+      ctx.clearRect(0, 0, width, height);
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const scale = Math.min(width, height) / (width < 600 ? 55 : 48);
+
+      if (state === 'background') {
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha += p.alphaSpeed;
+
+          if (p.alpha <= 0.15 || p.alpha >= 1) p.alphaSpeed *= -1;
+
+          if (p.x < 0) p.x = width;
+          if (p.x > width) p.x = 0;
+          if (p.y < 0) p.y = height;
+          if (p.y > height) p.y = 0;
+
+          ctx.save();
+          ctx.globalAlpha = Math.max(0.1, p.alpha);
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = p.color;
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      if (state === 'heart') {
+        fallingStars.forEach(s => {
+          s.y += s.speed;
+          if (s.y > height) {
+            s.y = -20;
+            s.x = Math.random() * width;
+          }
+
+          ctx.save();
+          ctx.globalAlpha = s.alpha;
+          ctx.beginPath();
+          ctx.moveTo(s.x, s.y);
+          ctx.lineTo(s.x, s.y - s.length);
+          ctx.strokeStyle = s.color;
+          ctx.lineWidth = s.size;
+          ctx.lineCap = 'round';
+          ctx.shadowBlur = 10;
+          ctx.shadowColor = s.color;
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        angleY += 0.015;
+        renderHeartSet(heartParticles, angleY, centerX, centerY, scale, '#ff2a55', 14);
+        renderHeartSet(innerHeartParticles, -angleY * 0.8, centerX, centerY, scale, '#ffffff', 8);
+      }
+
+      if (state === 'gathering') {
+        particles.forEach(p => {
+          p.x += (centerX - p.x) * 0.05;
+          p.y += (centerY - p.y) * 0.05;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = '#ff0055';
+          ctx.shadowBlur = 12;
+          ctx.shadowColor = '#ff0055';
+          ctx.fill();
+        });
+      }
+      else if (state === 'searching') {
+        const elapsed = Date.now() - searchStartTime;
+        const searchProgress = Math.min(elapsed / SEARCH_DURATION, 1);
+
+        const angle = searchProgress * Math.PI * 1.2;
+        const env = Math.sin(searchProgress * Math.PI);
+
+        const offsetX = Math.sin(angle * 1.2) * (width * 0.18) * env;
+        const offsetY = Math.sin(angle * 2.2) * (height * 0.10) * env;
+
+        searchCurrentX = centerX + offsetX;
+        searchCurrentY = centerY + offsetY;
+
+        particles.forEach(p => {
+          p.x += (searchCurrentX - p.x) * 0.04;
+          p.y += (searchCurrentY - p.y) * 0.04;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 1.6, 0, Math.PI * 2);
+          ctx.fillStyle = '#ff0055';
+          ctx.shadowBlur = 15;
+          ctx.shadowColor = '#ff0055';
+          ctx.fill();
+        });
+      }
+
+      requestAnimationFrame(animateCanvas);
+    }
+
+    function renderHeartSet(particlesArr, angle, centerX, centerY, scale, color, blur) {
+      const cosY = Math.cos(angle);
+      const sinY = Math.sin(angle);
+
+      particlesArr.forEach(p => {
+        const rotX = p.baseX * cosY - p.baseZ * sinY;
+        const rotZ = p.baseX * sinY + p.baseZ * cosY;
+
+        const perspective = 300 / (300 + rotZ);
+        const destX = centerX + rotX * scale * perspective;
+        const destY = centerY + p.baseY * scale * perspective;
+
+        p.x += (destX - p.x) * 0.08;
+        p.y += (destY - p.y) * 0.08;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * perspective, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.shadowBlur = blur * perspective;
+        ctx.shadowColor = '#ff4d6d';
+        ctx.fill();
+      });
+    }
+
+    function startCenterGatheringAndExplode(onComplete) {
+      state = 'gathering';
+
+      cardBox.style.opacity = '0';
+      cardBox.style.transform = 'translate(-50%, -50%) scale(0.85)';
+      setTimeout(() => cardBox.classList.add('hidden'), 800);
+
+      setTimeout(() => {
+        state = 'searching';
+        searchStartTime = Date.now();
+        
+        setTimeout(() => {
+          confetti({
+            particleCount: 180,
+            spread: 130,
+            origin: { x: 0.5, y: 0.5 },
+            colors: ['#ff0055', '#ff4d6d', '#ffd700', '#ffffff', '#9d4edd'],
+            scalar: 1.5
+          });
+
+          state = 'heart';
+          setTimeout(onComplete, 400);
+        }, SEARCH_DURATION);
+
+      }, 1200);
+    }
+  </script>
+</body>
+</html>
