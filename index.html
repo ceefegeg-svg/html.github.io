@@ -277,37 +277,74 @@
       max-width: 100%;
     }
 
-    /* КНОПКА СНИЗУ ПО ЦЕНТРУ */
+    /* КНОПКИ СНИЗУ ПО ЦЕНТРУ */
     .view-all-container {
-      position: absolute;
-      bottom: 25px;
+      position: fixed;
+      bottom: 20px;
       left: 50%;
       transform: translateX(-50%);
-      z-index: 8;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: max-content;
+      max-width: 95vw;
     }
 
     .btn-view-all {
-      background: rgba(255, 77, 109, 0.25);
-      border: 1px solid rgba(255, 77, 109, 0.6);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background: rgba(255, 77, 109, 0.3);
+      border: 1px solid rgba(255, 77, 109, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       color: #fff;
-      padding: 14px 32px;
-      font-size: 1rem;
+      padding: 12px 24px;
+      font-size: 0.95rem;
       font-weight: 600;
       border-radius: 30px;
       cursor: pointer;
-      box-shadow: 0 0 20px rgba(255, 77, 109, 0.4);
+      box-shadow: 0 0 20px rgba(255, 77, 109, 0.5);
       transition: all 0.3s ease;
+      white-space: nowrap;
     }
 
-    .btn-view-all:hover {
-      background: rgba(255, 77, 109, 0.5);
-      box-shadow: 0 0 30px rgba(255, 77, 109, 0.8);
-      transform: scale(1.05);
+    .btn-view-all:hover, .btn-view-all:active {
+      background: rgba(255, 77, 109, 0.6);
+      box-shadow: 0 0 30px rgba(255, 77, 109, 0.9);
+      transform: scale(1.03);
     }
 
-    /* Модальное окно просмотра медиа (z-index: 200 — всегда ПОВЕРХ ВСЕХ ОКОН) */
+    /* Иконка Telegram */
+    .btn-telegram-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(0, 136, 204, 0.35);
+      border: 1px solid rgba(0, 168, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 20px rgba(0, 168, 255, 0.4);
+      transition: all 0.3s ease;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+
+    .btn-telegram-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
+      margin-right: 2px;
+    }
+
+    .btn-telegram-icon:hover, .btn-telegram-icon:active {
+      background: rgba(0, 136, 204, 0.7);
+      box-shadow: 0 0 30px rgba(0, 168, 255, 0.9);
+      transform: scale(1.08);
+    }
+
+    /* Модальное окно просмотра медиа (z-index: 200) */
     .modal {
       position: fixed;
       top: 0;
@@ -470,46 +507,50 @@
 
     /* Мобильная адаптация */
     @media (max-width: 600px) {
-      .header-title { font-size: 1.3rem; top: 15px; }
+      .header-title { font-size: 1.2rem; top: 18px; }
       
       .photo-card { 
-        width: 125px;
-        padding: 6px; 
+        width: 120px;
+        padding: 5px; 
         border-radius: 12px;
       }
 
       .photo-card img { 
-        height: 85px; 
+        height: 75px; 
         border-radius: 8px;
       }
 
       .photo-card .caption { 
-        font-size: 0.65rem; 
+        font-size: 0.6rem; 
       }
 
-      .photo-top-left { top: 9%; left: 2%; }
-      .photo-bottom-left { bottom: 11%; left: 2%; }
-      .photo-top-right { top: 9%; right: 2%; }
-      .photo-bottom-right { bottom: 11%; right: 2%; }
+      /* Отступ нижних карточек от низа экрана, чтобы не перекрывали кнопку */
+      .photo-top-left { top: 8%; left: 2%; }
+      .photo-bottom-left { bottom: 17%; left: 2%; }
+      .photo-top-right { top: 8%; right: 2%; }
+      .photo-bottom-right { bottom: 17%; right: 2%; }
 
-      .btn-view-all { font-size: 0.85rem; padding: 10px 22px; }
+      .view-all-container { bottom: 15px; gap: 8px; }
+      .btn-view-all { font-size: 0.8rem; padding: 10px 18px; }
+      .btn-telegram-icon { width: 40px; height: 40px; }
+      .btn-telegram-icon svg { width: 18px; height: 18px; }
 
       .gallery-container {
-        padding: 14px;
+        padding: 12px;
       }
 
       .tab-btn {
-        padding: 8px 18px;
-        font-size: 0.88rem;
+        padding: 8px 16px;
+        font-size: 0.85rem;
       }
 
       .gallery-grid {
         grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-        gap: 12px;
+        gap: 10px;
       }
 
       .gallery-grid img, .video-card {
-        height: 135px;
+        height: 125px;
       }
     }
   </style>
@@ -555,9 +596,16 @@
       <div class="caption">Были времена 💫</div>
     </div>
 
-    <!-- КНОПКА СНИЗУ -->
+    <!-- КНОПКА ГАЛЕРЕИ И ИКОНКА ТЕЛЕГРАМА СНИЗУ ПО ЦЕНТРУ -->
     <div class="view-all-container">
-      <button class="btn-view-all" onclick="openGallery()">Просмотреть все воспоминания</button>
+      <button class="btn-view-all" onclick="openGallery()">Все воспоминания</button>
+      
+      <!-- Круглая иконка Telegram -->
+      <a href="https://t.me/your_username" target="_blank" class="btn-telegram-icon" title="Написать в Telegram">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.16l-1.97 9.28c-.15.67-.54.83-1.1.52l-3.04-2.24-1.47 1.41c-.16.16-.3.3-.61.3l.22-3.08 5.61-5.07c.24-.22-.05-.34-.38-.13l-6.93 4.36-2.99-.93c-.65-.2-.66-.65.14-.97l11.7-4.51c.54-.2 1.02.13.83.97z"/>
+        </svg>
+      </a>
     </div>
   </div>
 
@@ -613,32 +661,13 @@
 
       <!-- Вкладка Видео -->
       <div id="videos-tab-content" class="gallery-grid hidden">
-        <!-- 
-          ЧТОБЫ ДОБАВЛЯТЬ ВИДЕО:
-          Просто скопируй блок <div class="video-card"> ниже и укажи путь к видео в src="videos/video1.mp4"
-        -->
         <div class="video-card" onclick="openVideoModal('videos/video1.mp4')">
           <video src="videos/video1.mp4#t=0.5" preload="metadata"></video>
           <div class="play-icon"></div>
         </div>
-        
+
         <div class="video-card" onclick="openVideoModal('videos/video2.mp4')">
           <video src="videos/video2.mp4#t=0.5" preload="metadata"></video>
-          <div class="play-icon"></div>
-        </div>
-        
-        <div class="video-card" onclick="openVideoModal('videos/video3.mp4')">
-          <video src="videos/video3.mp4#t=0.5" preload="metadata"></video>
-          <div class="play-icon"></div>
-        </div>
-        
-        <div class="video-card" onclick="openVideoModal('videos/video4.mp4')">
-          <video src="videos/video4.mp4#t=0.5" preload="metadata"></video>
-          <div class="play-icon"></div>
-        </div>
-
-        <div class="video-card" onclick="openVideoModal('videos/video5.mp4')">
-          <video src="videos/video5.mp4#t=0.5" preload="metadata"></video>
           <div class="play-icon"></div>
         </div>
       </div>
